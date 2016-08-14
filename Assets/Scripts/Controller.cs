@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Controller : MonoBehaviour {
 
@@ -11,14 +12,12 @@ public class Controller : MonoBehaviour {
 	}
 
 	private Valve.VR.EVRButtonId gripButton = Valve.VR.EVRButtonId.k_EButton_Grip;
-	private bool gripButtonUp = false;
-	private bool gripButtonDown = false;
-	private bool gripButtonPress = false;
-
 	private Valve.VR.EVRButtonId triggerButton = Valve.VR.EVRButtonId.k_EButton_SteamVR_Trigger;
-	private bool triggerButtonUp = false;
-	private bool triggerButtonDown = false;
-	private bool triggerButtonPress = false;
+
+	private HashSet<InteractableItem> objectHoveringOver = new HashSet<InteractableItem>();
+
+	private InteractableItem closestItem;
+	private InteractableItem interactingItem;
 
 	void Start () {
 		trackedObject = GetComponent <SteamVR_TrackedObject> ();
@@ -30,25 +29,53 @@ public class Controller : MonoBehaviour {
 			return;
 		}
 
-		gripButtonDown = controller.GetPressDown (gripButton);
-		gripButtonUp = controller.GetPressUp (gripButton);
-		gripButtonPress = controller.GetPress (gripButton);
+		if (controller.GetPressDown (gripButton)) {
+		}
+		if (controller.GetPressUp (gripButton)) {
+		}
 
-		triggerButtonDown = controller.GetPressDown (triggerButton);
-		triggerButtonUp = controller.GetPressUp (triggerButton);
-		triggerButtonPress = controller.GetPress (triggerButton);
+		if(controller.GetPressDown (triggerButton)) {
+			float minDistance = float.MaxValue;
+			float distance;
+			closestItem = null;
+			foreach(InteractableItem item in objectHoveringOver) {
+				distance = (item.transform.position - transform.position).sqrMagnitude;
+				if(distance < minDistance) {
+					minDistance = distance;
+					closestItem = item;
+				}
+			}
 
-		if (gripButtonDown) {
-			Debug.Log ("Grip Button was just pressed");
+			interactingItem = closestItem;
+
+			if (interactingItem) {
+				if (interactingItem.isInteracting ()) {
+					interactingItem.EndInteraction (this);
+				}
+
+				interactingItem.BeginInteraction (this);
+			}
 		}
-		if (gripButtonUp) {
-			Debug.Log ("Grip Button was just unpressed");
+
+		if (controller.GetPressUp (triggerButton) && interactingItem != null) {
+			interactingItem.EndInteraction (this);
+			interactingItem = null;
 		}
-		if(triggerButtonDown) {
-			Debug.Log ("Trigger button was just pressed");
-		}
-		if (triggerButtonUp) {
-			Debug.Log ("Trigger button was just unpressed");
+
+	}
+
+	private void OnTriggerEnter(Collider collider) {
+		InteractableItem collidedItem = collider.GetComponent<InteractableItem> ();
+		if(collidedItem) {
+			objectHoveringOver.Add (collidedItem);
 		}
 	}
+
+	private void OnTriggerExit(Collider collider) {
+		InteractableItem collidedItem = collider.GetComponent<InteractableItem> ();
+		if(collidedItem) {
+			objectHoveringOver.Remove (collidedItem);
+		}
+	}
+
 }
