@@ -37,16 +37,17 @@ public class Controller : MonoBehaviour {
 		if(controller.GetPressDown (triggerButton)) {
 			float minDistance = float.MaxValue;
 			float distance;
-			closestItem = null;
+			objectHoveringOver.RemoveWhere (obj => obj == null);
 			foreach(InteractableItem item in objectHoveringOver) {
 				distance = (item.transform.position - transform.position).sqrMagnitude;
-				if(distance < minDistance) {
+				if (distance < minDistance) {
 					minDistance = distance;
 					closestItem = item;
 				}
 			}
 
 			interactingItem = closestItem;
+			closestItem = null;
 
 			if (interactingItem) {
 				if (interactingItem.isInteracting ()) {

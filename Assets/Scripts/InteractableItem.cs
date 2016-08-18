@@ -3,9 +3,9 @@ using System.Collections;
 
 public class InteractableItem : MonoBehaviour {
 	
-	private Rigidbody rigidBody;
+	protected Rigidbody rigidBody;
 
-	private bool currentlyInteracting;
+	protected bool currentlyInteracting;
 
 	private Transform interactionPoint;
 
@@ -15,16 +15,17 @@ public class InteractableItem : MonoBehaviour {
 	private Quaternion rotationDelta;
 	private float angle;
 	private Vector3 axis;
-	private float rotationFactor = 400f;
-	private float velocityFactor = 20000f;
+	private float rotationBaseSpeed = 20f;
+	private float velocityFactor = 40000f;
 
-	void Start () {
+	protected void Start () {
 		rigidBody = GetComponent <Rigidbody> ();
 		interactionPoint = new GameObject ().transform;
 		velocityFactor /= rigidBody.mass;
+		rigidBody.maxAngularVelocity = 50f;
 	}
 	
-	void FixedUpdate () {
+	protected void FixedUpdate () {
 		if(attachedController && currentlyInteracting) {
 			posDelta = attachedController.transform.position - interactionPoint.position;
 			this.rigidBody.velocity = posDelta * velocityFactor * Time.fixedDeltaTime;
@@ -35,11 +36,16 @@ public class InteractableItem : MonoBehaviour {
 			if(angle > 180) {
 				angle -= 360;
 			}
+			else if(angle < -180){
+				angle += 360;
+			}
 
-			if (angle < 5f) {
+			if (angle < 1f) {
 				this.rigidBody.angularVelocity = Vector3.zero;
 			} else {
-				this.rigidBody.angularVelocity = (Time.fixedDeltaTime * angle * axis) * rotationFactor;
+				// TODO: GET A REAL LOG FUNCTION LMAO
+				float rotationSpeed = rotationBaseSpeed * (0.54f * Mathf.Log (0.01924f*angle)+2.2f)/3f; // 0.02 - 1.08 logarithmically
+				this.rigidBody.angularVelocity = (Time.fixedDeltaTime * angle * axis) * rotationSpeed;
 			}
 		}
 	}
@@ -64,4 +70,8 @@ public class InteractableItem : MonoBehaviour {
 		return currentlyInteracting;
 	}
 
+	private void OnDestroy() {
+		if(interactionPoint)
+			Destroy (interactionPoint.gameObject);
+	}
 }
